@@ -1,0 +1,18 @@
+# Secrets — never commit a real key
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Generated reports
+reports/
+
+# OS
+.DS_Store

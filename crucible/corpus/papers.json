@@ -1,0 +1,151 @@
+{
+  "knowledge_base": "Agent Reliability KB",
+  "description": "Curated internal briefing notes on agentic-system failure modes and evaluation techniques. Synthesized for demonstration; not verbatim paper abstracts.",
+  "entries": [
+    {
+      "id": "KB-001",
+      "title": "ReAct: interleaving reasoning and acting",
+      "topic": "reasoning-action loops",
+      "tags": ["react", "tool-use", "reasoning", "planning"],
+      "summary": "ReAct prompts a model to alternate between free-form reasoning traces and concrete tool actions, feeding each observation back into the next reasoning step.",
+      "key_points": [
+        "Reasoning traces let the agent decompose a task before committing to a tool call.",
+        "Observations from tools are appended to context, grounding the next decision.",
+        "Works best when the tool surface is small and tools have unambiguous descriptions."
+      ],
+      "failure_modes": [
+        "Reasoning drift: the trace rationalizes a wrong tool choice instead of correcting it.",
+        "Context bloat: long observation histories crowd out the original instruction.",
+        "Premature answering before enough evidence is gathered."
+      ],
+      "source_note": "Field summary of the reason-act pattern as deployed in production agents."
+    },
+    {
+      "id": "KB-002",
+      "title": "Self-reflection and verbal reinforcement",
+      "topic": "self-reflection",
+      "tags": ["reflexion", "self-reflection", "self-correction", "retry"],
+      "summary": "A reflection step asks the agent to critique its own draft against the task and evidence, producing a revised answer without any weight updates.",
+      "key_points": [
+        "A separate critique pass catches unsupported claims the drafting pass missed.",
+        "Reflection is most effective when the critique is grounded in retrieved evidence, not vibes.",
+        "One or two reflection rounds capture most of the gain; more rounds rarely help."
+      ],
+      "failure_modes": [
+        "Sycophantic revision: the reviser agrees with the draft instead of challenging it.",
+        "Over-editing: a correct answer gets rewritten into a worse one.",
+        "Unbounded loops when there is no stop condition on the reflection cycle."
+      ],
+      "source_note": "Notes on verbal self-correction loops for agent answers."
+    },
+    {
+      "id": "KB-003",
+      "title": "Tool-use failure taxonomy",
+      "topic": "tool-use failures",
+      "tags": ["tool-use", "failures", "function-calling", "schema"],
+      "summary": "Tool-call failures cluster into selection errors, argument errors, and grounding errors. The dominant production failure is wrong-tool-selection, not malformed arguments.",
+      "key_points": [
+        "Selection errors: the agent picks the wrong tool for the task.",
+        "Argument errors: right tool, malformed or hallucinated arguments.",
+        "Grounding errors: the agent ignores or misreads the tool's returned observation.",
+        "Clear, disjoint tool descriptions reduce selection errors more than any prompt tweak."
+      ],
+      "failure_modes": [
+        "Overlapping tool descriptions force the model to guess between near-duplicates.",
+        "Silent argument coercion hides bugs until they surface downstream.",
+        "Tools that return unstructured blobs invite grounding errors."
+      ],
+      "source_note": "Taxonomy distilled from observed tool-call traces."
+    },
+    {
+      "id": "KB-004",
+      "title": "Hallucinated tool calls",
+      "topic": "hallucinated tool calls",
+      "tags": ["hallucination", "tool-use", "function-calling", "safety"],
+      "summary": "Agents sometimes emit calls to tools that do not exist, or fabricate observations for tools they never actually invoked.",
+      "key_points": [
+        "Fabricated observations are the most dangerous: the agent invents a plausible result.",
+        "Constraining the model to a registered tool schema removes nonexistent-tool calls.",
+        "Echoing the real observation back into context before answering reduces fabrication."
+      ],
+      "failure_modes": [
+        "The agent reports a tool result that was never returned.",
+        "Calls to plausibly-named but unregistered tools.",
+        "Confident final answers built on imagined evidence."
+      ],
+      "source_note": "Incident notes on fabricated tool activity."
+    },
+    {
+      "id": "KB-005",
+      "title": "Multi-agent coordination and delegation",
+      "topic": "multi-agent coordination",
+      "tags": ["multi-agent", "delegation", "orchestration", "hierarchy"],
+      "summary": "Hierarchical delegation (a coordinator routing to specialists) outperforms a single monolithic agent when sub-tasks need distinct tools or judgment, at the cost of more orchestration state.",
+      "key_points": [
+        "Explicit sequential or hierarchical control beats free-for-all transfer for predictability.",
+        "Shared session state is the contract between agents; keep its keys explicit.",
+        "Each hand-off is a place for context to be dropped or duplicated."
+      ],
+      "failure_modes": [
+        "State keys written by one agent and silently overwritten by another.",
+        "Coordinator loops where two agents transfer back and forth.",
+        "Lost context across hand-offs producing inconsistent final answers."
+      ],
+      "source_note": "Patterns for composing specialist agents."
+    },
+    {
+      "id": "KB-006",
+      "title": "LLM-as-judge: reliability and bias",
+      "topic": "llm-as-judge",
+      "tags": ["evaluation", "llm-as-judge", "rubric", "bias"],
+      "summary": "Using an LLM to score another model's output scales evaluation but inherits biases: position bias, verbosity bias, and self-preference. A fixed rubric with per-dimension scores mitigates them.",
+      "key_points": [
+        "Score discrete dimensions (e.g. groundedness, tool-selection, conciseness) rather than one vague number.",
+        "Verbosity bias inflates scores for longer answers; conciseness should be scored explicitly.",
+        "Held-out reference answers calibrate the judge and expose drift."
+      ],
+      "failure_modes": [
+        "Position bias: the first answer shown wins regardless of quality.",
+        "Self-preference: a judge favors outputs from its own model family.",
+        "Rubric collapse: all dimensions move together because the judge scores a gestalt."
+      ],
+      "source_note": "Reliability notes for automated scoring pipelines."
+    },
+    {
+      "id": "KB-007",
+      "title": "RAG chunking and retrieval grounding",
+      "topic": "rag chunking",
+      "tags": ["rag", "retrieval", "chunking", "grounding", "vector-db"],
+      "summary": "Chunk size and overlap drive retrieval quality more than the choice of vector store. Too-large chunks dilute relevance; too-small chunks fragment the answer's evidence.",
+      "key_points": [
+        "Chunk on semantic boundaries (sections, paragraphs) rather than fixed token windows when possible.",
+        "Modest overlap preserves context across chunk edges.",
+        "Always carry the source id with each chunk so answers can be grounded and audited."
+      ],
+      "failure_modes": [
+        "Oversized chunks bury the relevant sentence among irrelevant text.",
+        "Undersized chunks split a fact across two retrievals, neither sufficient alone.",
+        "Lost provenance: retrieved text with no source id cannot be verified."
+      ],
+      "source_note": "Retrieval tuning notes for enterprise knowledge bases."
+    },
+    {
+      "id": "KB-008",
+      "title": "Long-horizon credit assignment",
+      "topic": "long-horizon agents",
+      "tags": ["long-horizon", "credit-assignment", "eval", "trajectory"],
+      "summary": "In multi-step agent trajectories, a single early mistake can sink an otherwise correct run. Trajectory-level eval (not just final-answer eval) is needed to locate where reliability breaks.",
+      "key_points": [
+        "Score intermediate steps, not only the final answer, to localize failures.",
+        "Per-step tracing with stable ids makes failures reproducible and diff-able.",
+        "Tool-call accuracy at each step is a leading indicator of end-task success."
+      ],
+      "failure_modes": [
+        "Final-answer-only eval hides which step actually failed.",
+        "Compounding errors: a small early miss amplifies over a long horizon.",
+        "No stable step ids, so failures cannot be traced across runs."
+      ],
+      "source_note": "Notes on evaluating long-horizon tool-using agents."
+    }
+  ]
+}
