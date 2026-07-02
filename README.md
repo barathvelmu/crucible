@@ -124,6 +124,19 @@ hallucinating, the groundedness signal you actually care about in production.
 
 ---
 
+## Limits, honestly
+
+This repo was put through a real code audit (adversarial probes, cross-checked math), and the honest findings belong next to the sample output above:
+
+- **Offline, every in-scope question scores 5/5/5, and that proves plumbing, not intelligence.** The scripted researcher only cites what it retrieved and always appends a sources line, so the judge's checks always pass. The offline run verifies the harness end to end; the discriminating signal needs an online run or a deliberately harder dataset.
+- **The groundedness check is coarse at the edges.** It only drops the score when *every* cited id is ungrounded, so an answer mixing one real citation with invented ones still scores 5.
+- **Recall is only ever asserted at 1.0 in the tests.** A recall function stuck returning 1.0 would pass today's suite; a designed miss-case is the missing test.
+- **The offline report's token and throughput numbers are estimates.** The code's docstrings say so; the generated report should carry the same label.
+
+The audit also confirmed the load-bearing claims: the TF-IDF/cosine and percentile math check out against numpy, `ScriptedLLM` genuinely drives the real ADK Runner rather than replaying a transcript, and the judge does discriminate when given bad input (out-of-scope and hallucinated-citation probes score low). The list above is the worklist for making the eval discriminate, not a confession that it is hollow.
+
+---
+
 ## Project layout
 
 ```
